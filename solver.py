@@ -9,6 +9,7 @@ class Solver:
             data = json.load(file)
 
         self.load = data['load']
+        print(self.load)
         self.fuels = data['fuels']
         self.powerplants = data['powerplants']
         self.response = [{"name": plant['name'], "p": float('inf')} for plant in self.powerplants]
@@ -30,22 +31,48 @@ class Solver:
         return self.response
 
     def solve(self):
-        return
+        ranges = [self.power_range(plant) for plant in self.powerplants if not self.is_wind(plant)]
+        best_solution = None
+        min_cost = float('inf')
+        # a=1
+        # for range in ranges:
+        #     a = a * len(range)
+        # print(a)
+        i = 0
+        # Brute force
+        for power_combination in itertools.product(*ranges):
+            i = i + 1
+            print(power_combination)
+            total_power = sum(power_combination)
+            if total_power == self.load:
+                total_cost = sum(3 * power_combination[i] for i in range(len(ranges)))
+                # Update if we found a cheaper solution
+                if total_cost < min_cost:
+                    min_cost = total_cost
+                    best_solution = power_combination
+                    print(best_solution)
+        
+        return best_solution, min_cost
     
     def is_wind(self, powerplant: dict):
         return powerplant["type"] == "windturbine"
     
     def power_range(self, powerplant):
+        epsilon = 1
         min_p = powerplant['pmin']
         max_p = powerplant['pmax']
-        return np.arange(min_p, max_p + 0.1, 0.1)
+        if self.load <= max_p:
+            max_p = self.load
+        if min_p == 0:
+            return np.arange(min_p, max_p + 0.1, epsilon)
+        return np.insert(np.arange(min_p, max_p + 0.1, epsilon), 0, 0.0)
     
 if __name__ == "__main__":
     response = []
 
     dir = 'example_payloads/payload3.json'
     solver = Solver(dir)
-    print(solver.preprocess())
+    solver.preprocess()
     solver.solve()
 
     # with open(dir + '/payload3.json', 'r') as file:
