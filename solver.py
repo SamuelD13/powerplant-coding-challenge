@@ -38,21 +38,23 @@ class Solver:
         # for range in ranges:
         #     a = a * len(range)
         # print(a)
-        i = 0
-        # Brute force
-        for power_combination in itertools.product(*ranges):
-            i = i + 1
-            print(power_combination)
-            total_power = sum(power_combination)
-            if total_power == self.load:
-                total_cost = sum(3 * power_combination[i] for i in range(len(ranges)))
-                # Update if we found a cheaper solution
-                if total_cost < min_cost:
-                    min_cost = total_cost
-                    best_solution = power_combination
-                    print(best_solution)
+        # i = 0
+        # # Brute force
+        # for power_combination in itertools.product(*ranges):
+        #     print(i)
+        #     i = i + 1
+        #     total_power = sum(power_combination)
+        #     total_cost = sum(3 * power_combination[i] for i in range(len(ranges)))
+            
+        #     # Check if this combination meets the target energy requirement
+        #     if total_power == self.load:
+        #         # Update if we found a cheaper solution
+        #         if total_cost < min_cost:
+        #             min_cost = total_cost
+        #             best_solution = power_combination
+        #             print(best_solution)
         
-        return best_solution, min_cost
+        # return best_solution, min_cost
     
     def is_wind(self, powerplant: dict):
         return powerplant["type"] == "windturbine"
