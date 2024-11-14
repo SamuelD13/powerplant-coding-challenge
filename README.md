@@ -20,4 +20,4 @@ To run the solution, follow these steps:
    python test.py payload.json
    ```
 
-  The result will be returned and saved in the response.json file.
+  The result will be returned and saved in the `response.json` file.
