@@ -2,6 +2,8 @@ import json
 import numpy as np
 import itertools
 
+RATE = 0.3
+
 class Solver:
     def __init__(self, data_path) -> None:
 
@@ -31,30 +33,26 @@ class Solver:
         return self.response
 
     def solve(self):
-        ranges = [self.power_range(plant) for plant in self.powerplants if not self.is_wind(plant)]
+        ranges = {index: self.power_range(plant) for index, plant in enumerate(self.powerplants) if not self.is_wind(plant)}
         best_solution = None
         min_cost = float('inf')
-        # a=1
-        # for range in ranges:
-        #     a = a * len(range)
-        # print(a)
-        # i = 0
-        # # Brute force
-        # for power_combination in itertools.product(*ranges):
-        #     print(i)
-        #     i = i + 1
-        #     total_power = sum(power_combination)
-        #     total_cost = sum(3 * power_combination[i] for i in range(len(ranges)))
-            
-        #     # Check if this combination meets the target energy requirement
-        #     if total_power == self.load:
-        #         # Update if we found a cheaper solution
-        #         if total_cost < min_cost:
-        #             min_cost = total_cost
-        #             best_solution = power_combination
-        #             print(best_solution)
+        # Brute force
+        for power_combination in itertools.product(*ranges.values()):
+            total_power = sum(power_combination)
+            if total_power == self.load:
+                total_cost = 0.0
+                for power, index in zip(power_combination, ranges.keys()):
+                    plant = self.powerplants[index]
+                    if plant['type'] == "gasfired":
+                        total_cost += (self.fuels["gas(euro/MWh)"]*power + self.fuels["co2(euro/ton)"]*RATE*power)*plant['efficiency']
+                    if plant['type'] == "turbojet":
+                        total_cost += self.fuels["kerosine(euro/MWh)"]*power*plant['efficiency']
+                if total_cost < min_cost:
+                    min_cost = total_cost
+                    best_solution = power_combination
+                    print(best_solution)
         
-        # return best_solution, min_cost
+        return best_solution, min_cost
     
     def is_wind(self, powerplant: dict):
         return powerplant["type"] == "windturbine"
