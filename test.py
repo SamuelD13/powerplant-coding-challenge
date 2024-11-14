@@ -1,7 +1,6 @@
 import requests
 import json
 import argparse
-import os
 
 def main():
     parser = argparse.ArgumentParser(description="Test the /productionplan API endpoint")

@@ -1,6 +1,4 @@
 import json
-import numpy as np
-import itertools
 
 RATE = 0.3
 
@@ -116,7 +114,7 @@ class Solver:
 if __name__ == "__main__":
     response = []
 
-    dir = 'example_payloads/payload2.json'
+    dir = 'example_payloads/payload3.json'
     with open(dir, 'r') as file:
         data = json.load(file)
     solver = Solver(data)
