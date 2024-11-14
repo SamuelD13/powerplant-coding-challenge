@@ -5,16 +5,11 @@ import itertools
 RATE = 0.3
 
 class Solver:
-    def __init__(self, data_path) -> None:
-
-        with open(data_path, 'r') as file:
-            data = json.load(file)
-
+    def __init__(self, data) -> None:
         self.load = data['load']
         self.fuels = data['fuels']
         self.powerplants = data['powerplants']
         self.response = [{"name": plant['name'], "p": float('inf')} for plant in self.powerplants]
-
         return
     
     def preprocess(self):
@@ -59,7 +54,6 @@ class Solver:
                 cost += self.kerosine_cost(1, plant)
             ranks.append(cost)
         sorted_indexes = sorted(range(len(ranks)), key=lambda i: ranks[i])
-        print(ranks)
         return sorted_indexes
     
     def gas_cost(self, power, plant):
@@ -114,7 +108,9 @@ if __name__ == "__main__":
     response = []
 
     dir = 'example_payloads/payload3.json'
-    solver = Solver(dir)
+    with open(dir, 'r') as file:
+        data = json.load(file)
+    solver = Solver(data)
     response = solver.solve()
 
     with open('result.json', 'w') as fp:
