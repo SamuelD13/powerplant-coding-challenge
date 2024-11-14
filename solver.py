@@ -5,85 +5,104 @@ import itertools
 RATE = 0.3
 
 class Solver:
+    
     def __init__(self, data) -> None:
         self.load = data['load']
         self.fuels = data['fuels']
         self.powerplants = data['powerplants']
         self.response = [{"name": plant['name'], "p": float('inf')} for plant in self.powerplants]
         return
-    
-    def preprocess(self):
-        for i, plant in enumerate(self.powerplants):
-            if self.is_wind(plant):
-                max_p = plant['pmax']*self.fuels["wind(%)"]/100
-                if max_p <= self.load:
-                    self.load = self.load - max_p
-                    self.response[i]['p'] = max_p
-                    continue
-                self.load = 0
-                self.response[i]['p'] = self.load
-        return self.response
 
     def solve(self):
+        """
+        Solve the problem with an heuristic that dispatches power plants based on their ranking.
+
+        Returns:
+            dict: A dictionary containing the power output assigned to each plant, indexed by the plant's ID.
+        """
         rank = self.ranking()
+
+        # Iterate through the power plants in order of their rank.
         for index in rank:
+
             plant = self.powerplants[index]
             max_p = plant['pmax']
             min_p = plant['pmin']
+
             if self.is_wind(plant):
                 max_p = max_p*self.fuels["wind(%)"]/100
                 min_p = min_p*self.fuels["wind(%)"]/100
+
+            # If the plant's maximum power is less than or equal to the remaining load, dispatch its full capacity.
             if max_p <= self.load:
                 self.load = self.load - max_p
                 self.response[index]['p'] = max_p
                 continue
+
+            # If the load is less than or equal to the plant's minimum power, do not dispatch any power from this plant.
             if self.load <= min_p:
                 self.response[index]['p'] = 0.0
                 continue
+
+            # If the load is in between the plant's minimum and maximum capacity, dispatch only the remaining load.
             self.response[index]['p'] = self.load
             self.load = 0.0
+            
         return self.response
     
     def ranking(self):
+        """
+        Calculate the ranking of power plants based on their fuel cost.
+
+        This method calculates the fuel cost for each power plant in the `self.powerplants` list,
+        based on whether the plant uses gas or kerosine.
+
+        Returns:
+            list[int]: A list of indices representing the power plants sorted by fuel cost 
+            in ascending order.
+        """
         ranks = []
         for plant in self.powerplants:
+
             cost = 0.0
+
+            # Compute the cost for one unit of power generated
             if self.is_gas(plant):
                 cost += self.gas_cost(1, plant)
+
             if self.is_kerosine(plant):
                 cost += self.kerosine_cost(1, plant)
+
             ranks.append(cost)
+
         sorted_indexes = sorted(range(len(ranks)), key=lambda i: ranks[i])
         return sorted_indexes
     
     def gas_cost(self, power, plant):
+        """
+        Calculate the cost of the energy production for a gas power plant.
+
+        Args:
+            power (float): The amount of power to be generated, in MWh.
+            plant (dict): A dictionary representing the power plant.
+
+        Returns:
+            float: The calculated gas fuel cost for the given power and plant, in euros.
+        """
         return (self.fuels["gas(euro/MWh)"]*power + self.fuels["co2(euro/ton)"]*RATE*power)/plant['efficiency']
 
     def kerosine_cost(self, power, plant):
-        return self.fuels["kerosine(euro/MWh)"]*power/plant['efficiency']
+        """
+        Calculate the cost of the energy production for a kerosine power plant.
 
-    # def solve(self):
-    #     ranges = {index: self.power_range(plant) for index, plant in enumerate(self.powerplants) if not self.is_wind(plant)}
-    #     best_solution = None
-    #     min_cost = float('inf')
-    #     # Brute force
-    #     for power_combination in itertools.product(*ranges.values()):
-    #         total_power = sum(power_combination)
-    #         if total_power == self.load:
-    #             print("yes: ", power_combination)
-    #             total_cost = 0.0
-    #             for power, index in zip(power_combination, ranges.keys()):
-    #                 plant = self.powerplants[index]
-    #                 if plant['type'] == "gasfired":
-    #                     total_cost += (self.fuels["gas(euro/MWh)"]*power + self.fuels["co2(euro/ton)"]*RATE*power)/plant['efficiency']
-    #                 if plant['type'] == "turbojet":
-    #                     total_cost += self.fuels["kerosine(euro/MWh)"]*power/plant['efficiency']
-    #             if total_cost < min_cost:
-    #                 min_cost = total_cost
-    #                 best_solution = power_combination
-    #                 print(best_solution)
-        
-    #     return best_solution, min_cost
+        Args:
+            power (float): The amount of power to be generated, in MWh.
+            plant (dict): A dictionary representing the power plant.
+
+        Returns:
+            float: The calculated gas fuel cost for the given power and plant, in euros.
+        """
+        return self.fuels["kerosine(euro/MWh)"]*power/plant['efficiency']
     
     def is_gas(self, powerplant: dict):
         return powerplant["type"] == "gasfired"
@@ -94,52 +113,15 @@ class Solver:
     def is_wind(self, powerplant: dict):
         return powerplant["type"] == "windturbine"
     
-    def power_range(self, powerplant):
-        epsilon = 0.1
-        min_p = powerplant['pmin']
-        max_p = powerplant['pmax']
-        if self.load <= max_p:
-            max_p = self.load
-        if min_p == 0:
-            return np.arange(min_p, max_p + 0.1, epsilon)
-        return np.insert(np.arange(min_p, max_p + 0.1, epsilon), 0, 0.0)
-    
 if __name__ == "__main__":
     response = []
 
-    dir = 'example_payloads/payload3.json'
+    dir = 'example_payloads/payload2.json'
     with open(dir, 'r') as file:
         data = json.load(file)
     solver = Solver(data)
     response = solver.solve()
+    print(response)
 
     with open('result.json', 'w') as fp:
         json.dump(response, fp)
-
-    # with open(dir + '/payload3.json', 'r') as file:
-    #     data = json.load(file)
-
-    # load = data['load']
-    # fuels = data['fuels']
-    # powerplants = data['powerplants']
-    # thermalplants = powerplants.copy()
-    # windparks = []
-
-    # for i, plant in enumerate(powerplants):
-    #     if is_wind(plant):
-    #         thermalplants.remove(plant)
-    #         windparks.append(plant)
-
-    # response = [{"name": plant['name'], "p": float('inf')} for plant in powerplants]
-    # print(response)
-
-    # for i, plant in enumerate(powerplants):
-    #     if is_wind(plant):
-    #         max_p = plant['pmax']*fuels["wind(%)"]/100
-    #         if max_p <= load:
-    #             load = load - max_p
-    #             response[i]['p'] = max_p
-    #             continue
-    #         load = 0
-    #         response[i]['p'] = load
-    # print(response)

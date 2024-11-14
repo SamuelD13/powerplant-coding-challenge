@@ -1,11 +1,16 @@
 import requests
 import json
+import argparse
+import os
 
-if __name__ == '__main__':
+def main():
+    parser = argparse.ArgumentParser(description="Test the /productionplan API endpoint")
+    parser.add_argument('filename', type=str, help="The JSON file containing the data to send")
+    args = parser.parse_args()
 
     url = "http://127.0.0.1:8888/productionplan"
 
-    with open('example_payloads/payload2.json', 'r') as file:
+    with open(args.filename, 'r') as file:
         payload = json.load(file)
 
     response = requests.post(url, json=payload)
@@ -14,3 +19,6 @@ if __name__ == '__main__':
         print("Success:", response.json())
     else:
         print(f"Failed with status code {response.status_code}: {response.json()}")
+
+if __name__ == '__main__':
+    main()

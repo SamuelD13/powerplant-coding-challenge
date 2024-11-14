@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 import logging
 from solver import Solver
 import json
-import requests
 
 app = Flask(__name__)
 
@@ -18,6 +17,9 @@ def production_plan():
 
         solver = Solver(data)
         result = solver.solve()
+
+        with open('response.json', 'w') as fp:
+            json.dump(result, fp, indent=4)
 
         return jsonify(result), 200
 
